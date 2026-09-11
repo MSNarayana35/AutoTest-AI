@@ -58,3 +58,19 @@ backend/uploads/*
 *.db
 *.sqlite
 *.sqlite3
+
+# Logs
+*.log
+*.err.log
+logs/
+backend/*.log
+frontend/*.log
+
+# Debug
+debug.py
+debug.md
+.dbg/
+
+# Cache
+.cache/
+.pytest_cache/
