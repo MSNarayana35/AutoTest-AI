@@ -4,7 +4,7 @@
 
 **Date**: January 2026  
 **Status**: ✅ **UPLOADED**  
-**Repository**: https://github.com/MSNarayana35/1253
+**Repository**: https://github.com/MSNarayana35/autotest-ai
 
 ---
 
@@ -34,12 +34,12 @@
 
 **Repository URL**: 
 ```
-https://github.com/MSNarayana35/1253
+https://github.com/MSNarayana35/autotest-ai
 ```
 
 **Clone Command**:
 ```bash
-git clone https://github.com/MSNarayana35/1253.git
+git clone https://github.com/MSNarayana35/autotest-ai.git
 ```
 
 ---
@@ -251,7 +251,7 @@ Once you choose a platform, deployment is simple:
 
 ---
 
-**Your repository**: https://github.com/MSNarayana35/1253
+**Your repository**: https://github.com/MSNarayana35/autotest-ai
 
 **Deploy now**: https://railway.app
 
