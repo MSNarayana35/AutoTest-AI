@@ -26,22 +26,6 @@ export default function Home() {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    // #region debug-point A:login-submit
-    fetch('http://127.0.0.1:7777/event', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: 'app-flow-error',
-        runId: 'pre-fix',
-        hypothesisId: 'A',
-        location: 'frontend/app/page.tsx:25',
-        msg: '[DEBUG] login submit handler fired',
-        data: { emailLength: email?.length ?? 0 },
-        ts: Date.now()
-      })
-    }).catch(() => {})
-    // #endregion
-
     try {
       const body = new URLSearchParams({ username: email, password })
       const res = await fetch(`${API_URL}/api/v1/auth/login`, {
@@ -49,21 +33,6 @@ export default function Home() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
       })
-      // #region debug-point B:login-response
-      fetch('http://127.0.0.1:7777/event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'app-flow-error',
-          runId: 'pre-fix',
-          hypothesisId: 'B',
-          location: 'frontend/app/page.tsx:44',
-          msg: '[DEBUG] login response received',
-          data: { ok: res.ok, status: res.status },
-          ts: Date.now()
-        })
-      }).catch(() => {})
-      // #endregion
       if (res.ok) {
         const data = await res.json()
         localStorage.setItem('token', data.access_token)
@@ -77,21 +46,6 @@ export default function Home() {
         toast({ title: 'Error logging in', description: 'Please check your credentials' })
       }
     } catch {
-      // #region debug-point C:login-error
-      fetch('http://127.0.0.1:7777/event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'app-flow-error',
-          runId: 'pre-fix',
-          hypothesisId: 'C',
-          location: 'frontend/app/page.tsx:65',
-          msg: '[DEBUG] login request threw',
-          data: {},
-          ts: Date.now()
-        })
-      }).catch(() => {})
-      // #endregion
       toast({ title: 'Connection error', description: 'Make sure backend is running' })
     }
     setLoading(false)
