@@ -1,17 +1,12 @@
 from app.core.config import settings
-from app.agents.base import get_llm
+from app.agents.base import BaseAgent, get_llm
 
 
-class SelfHealingAgent:
-    def __init__(self):
-        self.ollama_available = False
+class SelfHealingAgent(BaseAgent):
+    def __init__(self, config=None):
+        super().__init__(config)
+        self.ollama_available = self.llm is not None
         self.playwright_available = False
-
-        try:
-            self.llm = get_llm()
-            self.ollama_available = True
-        except Exception:
-            self.ollama_available = False
 
         # Lazy import — avoids DLL crash at startup if playwright/greenlet is broken
         try:
@@ -19,11 +14,11 @@ class SelfHealingAgent:
             self._playwright_import = sync_playwright
             self.playwright_available = True
         except Exception as e:
-            print(f"Playwright not available: {e}")
+            self.logger.warning(f"Playwright not available: {e}")
             self.playwright_available = False
 
     def heal_selector(self, html_snippet: str, failed_selector: str) -> str:
-        if not self.ollama_available:
+        if not self.ollama_available or not self.llm:
             return "body"
 
         try:
@@ -33,10 +28,12 @@ class SelfHealingAgent:
                 "Find the correct new selector for what the test probably intended to click.\n"
                 "Return ONLY a single CSS selector string (no explanation, just selector)"
             )
-            new_selector = self.llm.invoke(prompt).strip().strip('"').strip("'")
+            response = self.llm.invoke(prompt)
+            content = response.content if hasattr(response, 'content') else str(response)
+            new_selector = content.strip().strip('"').strip("'")
             return new_selector or "body"
         except Exception as e:
-            print(f"Self healing error: {e}")
+            self.logger.warning(f"Self healing error: {e}")
             return "body"
 
     def execute_test(self, url: str, selector: str) -> dict:

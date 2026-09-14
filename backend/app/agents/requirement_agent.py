@@ -1,4 +1,4 @@
-from app.agents.base import get_llm
+from app.agents.base import BaseAgent, get_llm
 import json
 import re
 
@@ -95,17 +95,14 @@ def _smart_fallback(content: str) -> dict:
     }
 
 
-class RequirementAgent:
-    def __init__(self):
-        try:
-            self.llm = get_llm()
-            self.ollama_available = True
-        except Exception:
-            self.ollama_available = False
+class RequirementAgent(BaseAgent):
+    def __init__(self, config=None):
+        super().__init__(config)
+        self.ollama_available = self.llm is not None
 
     def analyze_requirement(self, content: str) -> dict:
         # Always try LLM first
-        if self.ollama_available:
+        if self.ollama_available and self.llm:
             try:
                 prompt = f"""Analyze the following software requirements and extract structured information.
 
@@ -124,17 +121,38 @@ Return ONLY a valid JSON object with exactly these keys:
 Return ONLY the JSON, no explanation."""
 
                 response = self.llm.invoke(prompt)
-                if "{" in response and "}" in response:
-                    start = response.index("{")
-                    end = response.rindex("}") + 1
-                    parsed = json.loads(response[start:end])
+                content = response.content if hasattr(response, 'content') else str(response)
+                
+                if "{" in content and "}" in content:
+                    start = content.index("{")
+                    end = content.rindex("}") + 1
+                    parsed = json.loads(content[start:end])
                     # Validate required keys
                     required = {"functional_requirements", "non_functional_requirements",
                                 "test_objectives", "risks", "complexity"}
                     if required.issubset(parsed.keys()):
                         return parsed
             except Exception as e:
-                print(f"Error in RequirementAgent LLM call: {e}")
+                self.logger.warning(f"RequirementAgent LLM error: {e}")
 
         # Smart fallback — much better than the old generic template
         return _smart_fallback(content)
+
+    def run(self, input_data: dict) -> dict:
+        """Main execution method for the agent."""
+        content = input_data.get("content", "")
+        
+        try:
+            result = self.analyze_requirement(content)
+            return {
+                "success": True,
+                "agent": "requirement_agent",
+                "analysis": result
+            }
+        except Exception as e:
+            self.logger.error(f"Requirement analysis failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
