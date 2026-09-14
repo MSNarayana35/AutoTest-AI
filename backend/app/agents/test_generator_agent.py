@@ -1,4 +1,4 @@
-from app.agents.base import get_llm
+from app.agents.base import BaseAgent, get_llm
 import json
 import re
 
@@ -150,16 +150,13 @@ def _smart_fallback_tests(requirements: dict) -> list:
     return tests[:5]  # cap at 5
 
 
-class TestGeneratorAgent:
-    def __init__(self):
-        try:
-            self.llm = get_llm()
-            self.ollama_available = True
-        except Exception:
-            self.ollama_available = False
+class TestGeneratorAgent(BaseAgent):
+    def __init__(self, config=None):
+        super().__init__(config)
+        self.ollama_available = self.llm is not None
 
     def generate_test_cases(self, requirements: dict) -> list:
-        if self.ollama_available:
+        if self.ollama_available and self.llm:
             try:
                 req_content = json.dumps(requirements, indent=2)
                 prompt = f"""Generate 4-5 comprehensive, specific test cases for the following requirements.
@@ -180,14 +177,16 @@ Return ONLY a JSON array. Each element must have:
 IMPORTANT: Make titles specific to the actual requirements, not generic. Return ONLY the JSON array."""
 
                 response = self.llm.invoke(prompt)
-                if "[" in response and "]" in response:
-                    start = response.index("[")
-                    end = response.rindex("]") + 1
-                    tests = json.loads(response[start:end])
+                content = response.content if hasattr(response, 'content') else str(response)
+                
+                if "[" in content and "]" in content:
+                    start = content.index("[")
+                    end = content.rindex("]") + 1
+                    tests = json.loads(content[start:end])
                     if isinstance(tests, list) and len(tests) > 0:
                         return tests
             except Exception as e:
-                print(f"TestGeneratorAgent error: {e}")
+                self.logger.warning(f"TestGeneratorAgent LLM error: {e}")
 
         return _smart_fallback_tests(requirements)
 
@@ -225,3 +224,25 @@ def {fn_name}(page: Page):
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 '''.strip()
+
+    def run(self, input_data: dict) -> dict:
+        """
+        Main execution method for the agent.
+        """
+        requirements = input_data.get("requirements", {})
+        
+        try:
+            test_cases = self.generate_test_cases(requirements)
+            
+            return {
+                "success": True,
+                "agent": "test_generator_agent",
+                "test_cases": test_cases
+            }
+        except Exception as e:
+            self.logger.error(f"Test generation failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
