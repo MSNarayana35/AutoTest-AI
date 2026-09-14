@@ -35,7 +35,7 @@ class TestCaseResponse(BaseModel):
     is_flaky: bool = False
     failure_count: int = 0
     total_runs: int = 0
-    last_failure_date: datetime = None
+    last_failure_date: Optional[datetime] = None
     created_at: datetime
     
     class Config:
